@@ -4,3 +4,6 @@
 #Hardhat files
 cache
 artifacts
+
+#env
+.env

@@ -11,4 +11,5 @@ describe("MintNFT contract", function () {
     const ownerBalance = await hardhatMintNFT.balanceOf(owner.address);
     expect(await hardhatMintNFT.totalSupply()).to.equal(ownerBalance);
   });
+
 });

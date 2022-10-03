@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+require('dotenv').config();
 
 // Go to https://www.alchemyapi.io, sign up, create
 // a new App in its dashboard, and replace "KEY" with its key
@@ -13,10 +14,10 @@ const GOERLI_PRIVATE_KEY = "YOUR GOERLI PRIVATE KEY";
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: "0.8.17",
-  networks: {
-    goerli: {
-      url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-      accounts: [GOERLI_PRIVATE_KEY]
-    }
-  }
+  // networks: {
+  //   goerli: {
+  //     url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+  //     accounts: [GOERLI_PRIVATE_KEY]
+  //   }
+  // }
 };
