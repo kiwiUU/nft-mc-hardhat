@@ -5,6 +5,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract MintNFT is ERC721Enumerable, Ownable {
 
@@ -22,6 +23,9 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     // Allowlist mapping
     mapping(address => bool) public isAllowlistAddress;
+
+    // Signature tracker
+    mapping(bytes => bool) public signatureUsed;
 
     constructor(string memory _name, string memory _symbol, string memory _notRevealedURI) ERC721(_name, _symbol) {
         notRevealedURI = _notRevealedURI;
@@ -85,6 +89,34 @@ contract MintNFT is ERC721Enumerable, Ownable {
         isAllowlistAddress[msg.sender] = false;    
 
         payable(owner()).transfer(msg.value);
+    }
+
+    function recoverSigner(bytes32 hash, bytes memory signature) public pure returns (address) {
+
+        bytes32 messageDigest = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32", 
+                hash
+            )
+        );
+
+        return ECDSA.recover(messageDigest, signature);
+    }
+
+    // Presale mint - OffChain
+    function preSaleOffChain(bytes32 hash, bytes memory signature) public payable {
+        require(recoverSigner(hash, signature) == owner(), "Address is not allowlisted");
+        require(!signatureUsed[signature], "Signature has already been used.");
+        require(totalSupply() < maxTotalSupply, "You can no longer mint NFT.");
+        require(msg.value >= preMintPrice, "Not enough ether.");
+        
+        uint tokenId = totalSupply() + 1;
+        _mint(msg.sender, tokenId);
+
+        signatureUsed[signature] = true;
+
+        payable(owner()).transfer(msg.value);
+
     }
 
     // Airdrop NFTs

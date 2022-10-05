@@ -7,7 +7,11 @@ async function main() {
     console.log("Account balance:", (await deployer.getBalance()).toString());
   
     const MintNFT = await ethers.getContractFactory("MintNFT");
-    const mintNFT = await MintNFT.deploy("nft mc", "mc", "testURI");
+    const mintNFT = await MintNFT.deploy(
+        "nft mc test", 
+        "mc", 
+        "https://gateway.pinata.cloud/ipfs/QmPz6P5aPHiCTuu1guysuxtBCb1eY57vuF69Kv8zcKCxhf"
+        );
   
     console.log("mintNFT address:", mintNFT.address);
 }
