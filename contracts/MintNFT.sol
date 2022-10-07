@@ -17,6 +17,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
     uint public maxTotalSupply = 9800;
     uint public mintPrice = 5;
     uint public preMintPrice = 3;
+    uint public maxMintCount = 5;
 
     // mintList mapping
     mapping (address => bool) public isMintListAddress;
@@ -46,14 +47,20 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     function mintNFTOwner() public onlyOwner {
         uint tokenId = totalSupply() + 1;
-
         _mint(msg.sender, tokenId);
     }
 
-    function batchMintNFT(uint _amount) public {
+    function batchMintNFT(uint _amount) public payable {
+        require(totalSupply() + _amount <= maxTotalSupply, "You can no longer mint NFT.");
+        require(msg.value >= mintPrice * _amount, "Not enough ether.");
+        require(balanceOf(msg.sender) + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
+
         for (uint i = 0; i < _amount; i++) {
-            mintNFT();
+            uint tokenId = totalSupply() + 1;
+            _mint(msg.sender, tokenId);
         }
+
+        payable(owner()).transfer(msg.value);
     }
 
     function batchMintNFTOwner(uint _amount) public onlyOwner {
@@ -151,5 +158,9 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     function setPreMintPrice(uint _preMintPrice) public onlyOwner {
         preMintPrice = _preMintPrice;
+    }
+
+    function setMaxMintCount(uint _maxMintCount) public onlyOwner {
+        maxMintCount = _maxMintCount;
     }
 }
