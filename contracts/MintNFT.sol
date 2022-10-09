@@ -11,19 +11,20 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     string public notRevealedURI;
     string public metadataURI;
-
     bool public isRevealed;
+    bool public paused = true;
+    bool public whitelistMintEnabled = false;
 
     uint public maxTotalSupply = 9800;
     uint public mintPrice = 5;
     uint public preMintPrice = 3;
     uint public maxMintCount = 5;
 
-    // mintList mapping
-    mapping (address => bool) public isMintListAddress;
-
     // Allowlist mapping
     mapping(address => bool) public isAllowlistAddress;
+
+    // mintList mapping
+    mapping(address => uint) public mintlistAddress;
 
     // Signature tracker
     mapping(bytes => bool) public signatureUsed;
@@ -32,17 +33,19 @@ contract MintNFT is ERC721Enumerable, Ownable {
         notRevealedURI = _notRevealedURI;
     }
 
-    function mintNFT() public payable {
-        require(totalSupply() < maxTotalSupply, "You can no longer mint NFT.");
-        require(msg.value >= mintPrice, "Not enough ether.");
-        require(!isMintListAddress[msg.sender], "You have already minted.");
+    modifier costs(uint price) {
+        require(msg.value >= price, "Not enough ether.");
+        _;
+    }
 
-        uint tokenId = totalSupply() + 1;
+    modifier pause() {
+        require(!paused, "The contract is paused.");
+        _;
+    }
 
-        _mint(msg.sender, tokenId);
-        isMintListAddress[msg.sender] = true;
-
-        payable(owner()).transfer(msg.value);
+    modifier maxSupply(uint _amount) {
+        require(totalSupply() + _amount <= maxTotalSupply, "You can no longer mint NFT.");
+        _;
     }
 
     function mintNFTOwner() public onlyOwner {
@@ -50,16 +53,16 @@ contract MintNFT is ERC721Enumerable, Ownable {
         _mint(msg.sender, tokenId);
     }
 
-    function batchMintNFT(uint _amount) public payable {
-        require(totalSupply() + _amount <= maxTotalSupply, "You can no longer mint NFT.");
-        require(msg.value >= mintPrice * _amount, "Not enough ether.");
-        require(balanceOf(msg.sender) + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
+    function batchMintNFT(uint _amount) public payable pause costs(mintPrice * _amount) maxSupply(_amount) {
+        require(mintlistAddress[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
 
         for (uint i = 0; i < _amount; i++) {
             uint tokenId = totalSupply() + 1;
             _mint(msg.sender, tokenId);
         }
 
+        mintlistAddress[msg.sender] = mintlistAddress[msg.sender] + _amount;
+        
         payable(owner()).transfer(msg.value);
     }
 
@@ -85,10 +88,9 @@ contract MintNFT is ERC721Enumerable, Ownable {
     }
 
     // Presale mint
-    function preSale() public payable {
-        require(totalSupply() < maxTotalSupply, "You can no longer mint NFT.");
-        require(msg.value >= preMintPrice, "Not enough ether.");
+    function preSale() public payable costs(preMintPrice) maxSupply(1) {
         require(isAllowlistAddress[msg.sender], "Address is not allowlisted");
+        require(whitelistMintEnabled, "The presale is not enabled.");
 
         uint tokenId = totalSupply() + 1;
         _mint(msg.sender, tokenId);
@@ -111,11 +113,10 @@ contract MintNFT is ERC721Enumerable, Ownable {
     }
 
     // Presale mint - OffChain
-    function preSaleOffChain(bytes32 hash, bytes memory signature) public payable {
-        require(recoverSigner(hash, signature) == owner(), "Address is not allowlisted");
+    function preSaleOffChain(bytes32 hash, bytes memory signature) public payable costs(preMintPrice) maxSupply(1) {
+        require(recoverSigner(hash, signature) == owner(), "Address is not allowlisted.");
         require(!signatureUsed[signature], "Signature has already been used.");
-        require(totalSupply() < maxTotalSupply, "You can no longer mint NFT.");
-        require(msg.value >= preMintPrice, "Not enough ether.");
+        require(whitelistMintEnabled, "The presale is not enabled.");
         
         uint tokenId = totalSupply() + 1;
         _mint(msg.sender, tokenId);
@@ -127,9 +128,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
     }
 
     // Airdrop NFTs
-    function airdropNfts(address[] calldata wAddresses) public onlyOwner {
-        require(totalSupply() + wAddresses.length <= maxTotalSupply, "You can no longer mint NFT.");
-
+    function airdropNfts(address[] calldata wAddresses) public onlyOwner maxSupply(wAddresses.length) {
         for (uint i = 0; i < wAddresses.length; i++) {
             uint tokenId = totalSupply() + 1;
             _mint(wAddresses[i], tokenId);    
@@ -162,5 +161,13 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     function setMaxMintCount(uint _maxMintCount) public onlyOwner {
         maxMintCount = _maxMintCount;
+    }
+
+    function setPaused(bool _paused) public onlyOwner {
+        paused = _paused;
+    }
+
+    function setWhitelistMintEnabled(bool _whitelistMintEnabled) public onlyOwner {
+        whitelistMintEnabled = _whitelistMintEnabled;
     }
 }
