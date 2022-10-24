@@ -117,6 +117,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
         require(recoverSigner(hash, signature) == owner(), "Address is not allowlisted.");
         require(!signatureUsed[signature], "Signature has already been used.");
         require(whitelistMintEnabled, "The presale is not enabled.");
+        require(keccak256(abi.encodePacked(msg.sender)) == hash, "The sender is not allowlisted.");
         
         uint tokenId = totalSupply() + 1;
         _mint(msg.sender, tokenId);

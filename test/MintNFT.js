@@ -182,7 +182,7 @@ describe("MintNFT contract", function () {
         //console.log("Address is allowlisted! Minting should be possible.");
 
         // Compute message hash
-        messageHash = ethers.utils.id(selectedAddress);
+        messageHash = ethers.utils.keccak256(selectedAddress);
         //console.log("Message Hash: ", messageHash);
 
         // Sign the message hash
@@ -243,7 +243,7 @@ describe("MintNFT contract", function () {
         //console.log("Address is allowlisted! Minting should be possible.");
 
         // Compute message hash
-        messageHash = ethers.utils.id(selectedAddress);
+        messageHash = ethers.utils.keccak256(selectedAddress);
         //console.log("Message Hash: ", messageHash);
 
         // Sign the message hash
@@ -296,7 +296,7 @@ describe("MintNFT contract", function () {
         //console.log("Address is allowlisted! Minting should be possible.");
 
         // Compute message hash
-        messageHash = ethers.utils.id(selectedAddress);
+        messageHash = ethers.utils.keccak256(selectedAddress);
         //console.log("Message Hash: ", messageHash);
 
         // Sign the message hash
@@ -355,7 +355,7 @@ describe("MintNFT contract", function () {
         //console.log("Address is allowlisted! Minting should be possible.");
 
         // Compute message hash
-        messageHash = ethers.utils.id(selectedAddress);
+        messageHash = ethers.utils.keccak256(selectedAddress);
         //console.log("Message Hash: ", messageHash);
 
         // Sign the message hash
@@ -416,7 +416,7 @@ describe("MintNFT contract", function () {
           //console.log("Address is allowlisted! Minting should be possible.");
 
           // Compute message hash
-          messageHash = ethers.utils.id(selectedAddresses[index].address);
+          messageHash = ethers.utils.keccak256(selectedAddresses[index].address);
           //console.log("Message Hash: ", messageHash);
 
           // Sign the message hash
@@ -473,7 +473,7 @@ describe("MintNFT contract", function () {
         //console.log("Address is allowlisted! Minting should be possible.");
 
         // Compute message hash
-        messageHash = ethers.utils.id(selectedAddress);
+        messageHash = ethers.utils.keccak256(selectedAddress);
         //console.log("Message Hash: ", messageHash);
 
         // Sign the message hash
@@ -493,6 +493,62 @@ describe("MintNFT contract", function () {
       contract.setWhitelistMintEnabled(true);
 
       await expect(contract.connect(addr3).preSaleOffChain(messageHash, signature, { value: price })).to.be.revertedWith("Address is not allowlisted.");
+
+    });
+
+    it("The sender is not allowlisted.", async function () {
+
+      const { contract, owner, addr1, addr2, addr3, addr4, addr5 } = await loadFixture(deployTokenFixture);
+      
+      // Define a list of allowlisted wallets
+      const allowlistedAddresses = [
+        addr1.address,
+        addr2.address,
+        addr3.address,
+        addr4.address,
+        addr5.address
+      ];
+
+      // Select an allowlisted address to mint NFT
+      const selectedAddress = addr3.address;
+
+      // Define wallet that will be used to sign messages
+      const walletAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
+      const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      const signer = new ethers.Wallet(privateKey);
+      //console.log("Wallet used to sign messages: ", signer.address, "\n");
+      
+      const price = BigNumber.from(3);
+      const amount = BigNumber.from(1);
+
+      let messageHash, signature;
+
+      // Check if selected address is in allowlist
+      // If yes, sign the wallet's address
+      if (allowlistedAddresses.includes(selectedAddress)) {
+        //console.log("Address is allowlisted! Minting should be possible.");
+
+        // Compute message hash
+        messageHash = ethers.utils.keccak256(selectedAddress);
+        //console.log("Message Hash: ", messageHash);
+
+        // Sign the message hash
+        let messageBytes = ethers.utils.arrayify(messageHash);
+        signature = await signer.signMessage(messageBytes);
+        //console.log("Signature: ", signature, "\n");
+      }
+
+      
+
+      //console.log("Contract deployed to: ", contract.address);
+      //console.log("Contract deployed by (Owner/Signing Wallet): ", owner.address, "\n");
+
+      recover = await contract.recoverSigner(messageHash, signature);
+      //console.log("Message was signed by: ", recover.toString());
+
+      contract.setWhitelistMintEnabled(true);
+
+      await expect(contract.connect(addr1).preSaleOffChain(messageHash, signature, { value: price })).to.be.revertedWith("The sender is not allowlisted.");
 
     });
   });
