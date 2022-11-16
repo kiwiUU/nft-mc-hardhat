@@ -8,8 +8,8 @@ async function main() {
   
     const MintNFT = await ethers.getContractFactory("MintNFT");
     const mintNFT = await MintNFT.deploy(
-        "nft mc test", 
-        "mc", 
+        "MC name", 
+        "MC", 
         "https://gateway.pinata.cloud/ipfs/QmPz6P5aPHiCTuu1guysuxtBCb1eY57vuF69Kv8zcKCxhf"
         );
   

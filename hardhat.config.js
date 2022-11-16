@@ -18,6 +18,10 @@ module.exports = {
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
       accounts: [GOERLI_PRIVATE_KEY]
-    }
+    },
+    // mainnet: {
+    //   url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.MAINNET_API_KEY}`,
+    //   accounts: [process.env.MAINNET_PRIVATE_KEY]
+    // }
   }
 };
