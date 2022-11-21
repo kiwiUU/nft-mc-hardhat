@@ -17,6 +17,9 @@ contract MintNFT is ERC721Enumerable, Ownable {
     uint public mintPrice = 5;
     uint public maxMintCount = 3;
 
+    // signer
+    address public signer;
+
     // presale phase 1
     mapping(address => uint) public preMintlistAddress1;
     bool public preMintEnabled1 = false;
@@ -81,7 +84,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
     // presalel phase 1
     function preSaleOffChain1(bytes32 hash, bytes memory signature, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
         require(preMintEnabled1, "The presale1 is not enabled.");
-        require(recoverSigner(hash, signature) == owner(), "Address is not allowlisted.");
+        require(recoverSigner(hash, signature) == signer, "Address is not allowlisted.");
         require(keccak256(abi.encodePacked(msg.sender)) == hash, "The sender is not allowlisted.");
         require(_amount > 0, "The amount must be greater than 0.");
         require(preMintlistAddress1[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
@@ -100,7 +103,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
     // presalel phase 2
     function preSaleOffChain2(bytes32 hash, bytes memory signature, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
         require(preMintEnabled2, "The presale2 is not enabled.");
-        require(recoverSigner(hash, signature) == owner(), "Address is not allowlisted.");
+        require(recoverSigner(hash, signature) == signer, "Address is not allowlisted.");
         require(keccak256(abi.encodePacked(msg.sender)) == hash, "The sender is not allowlisted.");
         require(_amount > 0, "The amount must be greater than 0.");
         require(preMintlistAddress2[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
@@ -198,5 +201,9 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     function setAllowlistMintEnabled(bool _allowlistMintEnabled) public onlyOwner {
         allowlistMintEnabled = _allowlistMintEnabled;
+    }
+
+    function setSigner(address _signer) public onlyOwner {
+        signer = _signer;
     }
 }

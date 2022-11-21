@@ -21,6 +21,8 @@ describe("MintNFT contract", function () {
     await contract.setMintPrice(5);
     await contract.setMaxMintCount(5);
 
+    await contract.setSigner("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
+
     // Fixtures can return anything you consider useful for your tests
     return { MintNFT, contract, owner, addr1, addr2, addr3, addr4, addr5 };
   }
@@ -466,7 +468,7 @@ describe("MintNFT contract", function () {
       const selectedAddress = addr3.address;
 
       // Define wallet that will be used to sign messages
-      const walletAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
+      const walletAddress = '0xfe1E7Dc29512C1F351753753D7c9F2181dbCb465';
       const privateKey = '26903ab37094c48eb3b620f0c424f94ee54953891b8b4c840997bea2c9b2df2e';
       const signer = new ethers.Wallet(privateKey);
       //console.log("Wallet used to sign messages: ", signer.address, "\n");
@@ -615,6 +617,69 @@ describe("MintNFT contract", function () {
 
       await expect(contract.connect(addr3).preSaleOffChain1(messageHash, signature, amount, { value: price })).to.be.revertedWith("The amount must be greater than 0.");
 
+
+    });
+
+    it("signer changed.", async function () {
+
+      const { contract, owner, addr1, addr2, addr3, addr4, addr5 } = await loadFixture(deployTokenFixture);
+      
+      // Define a list of allowlisted wallets
+      const allowlistedAddresses = [
+        addr1.address,
+        addr2.address,
+        addr3.address,
+        addr4.address,
+        addr5.address
+      ];
+
+      // Select an allowlisted address to mint NFT
+      const selectedAddress = addr3.address;
+
+      // Define wallet that will be used to sign messages
+      const walletAddress = '0xfe1E7Dc29512C1F351753753D7c9F2181dbCb465';
+      const privateKey = '26903ab37094c48eb3b620f0c424f94ee54953891b8b4c840997bea2c9b2df2e';
+      const signer = new ethers.Wallet(privateKey);
+      //console.log("Wallet used to sign messages: ", signer.address, "\n");
+      
+      const price = BigNumber.from(5);
+      const amount = BigNumber.from(2);
+      const totalPrice = price.mul(amount);
+
+      let messageHash, signature;
+
+      // Check if selected address is in allowlist
+      // If yes, sign the wallet's address
+      if (allowlistedAddresses.includes(selectedAddress)) {
+        //console.log("Address is allowlisted! Minting should be possible.");
+
+        // Compute message hash
+        messageHash = ethers.utils.keccak256(selectedAddress);
+        //console.log("Message Hash: ", messageHash);
+
+        // Sign the message hash
+        let messageBytes = ethers.utils.arrayify(messageHash);
+        signature = await signer.signMessage(messageBytes);
+        //console.log("Signature: ", signature, "\n");
+      }
+
+      
+
+      //console.log("Contract deployed to: ", contract.address);
+      //console.log("Contract deployed by (Owner/Signing Wallet): ", owner.address, "\n");
+
+      recover = await contract.recoverSigner(messageHash, signature);
+      //console.log("Message was signed by: ", recover.toString());
+
+      contract.setPreMintEnabled1(true);
+      contract.setSigner(walletAddress);
+
+      let txn;
+      txn = await contract.connect(addr3).preSaleOffChain1(messageHash, signature, amount,{ value: totalPrice });
+      await txn.wait();
+      //console.log("NFTs minted successfully!");
+
+      expect(await contract.balanceOf(addr3.address)).to.be.equal(amount);
 
     });
   });
@@ -928,7 +993,7 @@ describe("MintNFT contract", function () {
       const selectedAddress = addr3.address;
   
       // Define wallet that will be used to sign messages
-      const walletAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
+      const walletAddress = '0xfe1E7Dc29512C1F351753753D7c9F2181dbCb465';
       const privateKey = '26903ab37094c48eb3b620f0c424f94ee54953891b8b4c840997bea2c9b2df2e';
       const signer = new ethers.Wallet(privateKey);
       //console.log("Wallet used to sign messages: ", signer.address, "\n");
@@ -1078,6 +1143,69 @@ describe("MintNFT contract", function () {
       await expect(contract.connect(addr3).preSaleOffChain2(messageHash, signature, amount, { value: price })).to.be.revertedWith("The amount must be greater than 0.");
   
   
+    });
+
+    it("signer changed.", async function () {
+
+      const { contract, owner, addr1, addr2, addr3, addr4, addr5 } = await loadFixture(deployTokenFixture);
+      
+      // Define a list of allowlisted wallets
+      const allowlistedAddresses = [
+        addr1.address,
+        addr2.address,
+        addr3.address,
+        addr4.address,
+        addr5.address
+      ];
+
+      // Select an allowlisted address to mint NFT
+      const selectedAddress = addr3.address;
+
+      // Define wallet that will be used to sign messages
+      const walletAddress = '0xfe1E7Dc29512C1F351753753D7c9F2181dbCb465';
+      const privateKey = '26903ab37094c48eb3b620f0c424f94ee54953891b8b4c840997bea2c9b2df2e';
+      const signer = new ethers.Wallet(privateKey);
+      //console.log("Wallet used to sign messages: ", signer.address, "\n");
+      
+      const price = BigNumber.from(5);
+      const amount = BigNumber.from(2);
+      const totalPrice = price.mul(amount);
+
+      let messageHash, signature;
+
+      // Check if selected address is in allowlist
+      // If yes, sign the wallet's address
+      if (allowlistedAddresses.includes(selectedAddress)) {
+        //console.log("Address is allowlisted! Minting should be possible.");
+
+        // Compute message hash
+        messageHash = ethers.utils.keccak256(selectedAddress);
+        //console.log("Message Hash: ", messageHash);
+
+        // Sign the message hash
+        let messageBytes = ethers.utils.arrayify(messageHash);
+        signature = await signer.signMessage(messageBytes);
+        //console.log("Signature: ", signature, "\n");
+      }
+
+      
+
+      //console.log("Contract deployed to: ", contract.address);
+      //console.log("Contract deployed by (Owner/Signing Wallet): ", owner.address, "\n");
+
+      recover = await contract.recoverSigner(messageHash, signature);
+      //console.log("Message was signed by: ", recover.toString());
+
+      contract.setPreMintEnabled2(true);
+      contract.setSigner(walletAddress);
+
+      let txn;
+      txn = await contract.connect(addr3).preSaleOffChain2(messageHash, signature, amount,{ value: totalPrice });
+      await txn.wait();
+      //console.log("NFTs minted successfully!");
+
+      expect(await contract.balanceOf(addr3.address)).to.be.equal(amount);
+
     });
   });
 
