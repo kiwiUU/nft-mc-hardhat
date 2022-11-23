@@ -32,6 +32,10 @@ contract MintNFT is ERC721Enumerable, Ownable {
     mapping(address => uint) public mintlistAddress;
     bool public mintEnabled = false;
 
+    // event sale
+    mapping(address => uint) public eventlistAddress;
+    bool public eventMintEnabled = false;
+
     constructor(string memory _name, string memory _symbol, string memory _notRevealedURI) ERC721(_name, _symbol) {
         notRevealedURI = _notRevealedURI;
     }
@@ -65,7 +69,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
         }
     }
 
-    // merkle tree phase 1
+    // presale phase 1
     function preSaleMerkleTree1(bytes32[] calldata proof, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
         require(preMintEnabled1, "The presale1 is not enabled.");
         require(_amount > 0, "The amount must be greater than 0.");
@@ -86,7 +90,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     }
 
-    // merkle tree phase 2
+    // presale phase 2
     function preSaleMerkleTree2(bytes32[] calldata proof, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
         require(preMintEnabled2, "The presale2 is not enabled.");
         require(_amount > 0, "The amount must be greater than 0.");
@@ -121,6 +125,27 @@ contract MintNFT is ERC721Enumerable, Ownable {
         mintlistAddress[msg.sender] = mintlistAddress[msg.sender] + _amount;
         
         payable(owner()).transfer(msg.value);
+    }
+
+    // event mint
+    function eventMint(bytes32[] calldata proof, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
+        require(eventMintEnabled, "The eventSale is not enabled.");
+        require(_amount > 0, "The amount must be greater than 0.");
+        require(eventlistAddress[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
+
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender))));
+
+        if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert("MerkleProof is invalid.");
+
+        for (uint i = 0; i < _amount; i++) {
+            uint tokenId = totalSupply() + 1;
+            _mint(msg.sender, tokenId);
+        }
+
+        eventlistAddress[msg.sender] = eventlistAddress[msg.sender] + _amount;
+
+        payable(owner()).transfer(msg.value);
+
     }
 
     // Airdrop NFTs
@@ -165,6 +190,10 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     function setMintEnabled(bool _mintEnabled) public onlyOwner {
         mintEnabled = _mintEnabled;
+    }
+
+    function setEventMintEnabled(bool _eventMintEnabled) public onlyOwner {
+        eventMintEnabled = _eventMintEnabled;
     }
 
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {

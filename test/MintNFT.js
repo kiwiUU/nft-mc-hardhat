@@ -39,6 +39,7 @@ describe("MintNFT contract", function () {
 
     contract.setPreMintEnabled1(true);
     contract.setPreMintEnabled2(true);
+    contract.setEventMintEnabled(true);
     await contract.setMintPrice(5);
     await contract.setMaxMintCount(5);
 
@@ -728,6 +729,262 @@ describe("MintNFT contract", function () {
   
       const prevOwnerBalance = await owner.getBalance();
       await contract.connect(addr1).preSaleMerkleTree2(proof, amount, { value: totalPrice });
+
+
+      expect(await owner.getBalance()).to.eq(prevOwnerBalance.add(totalPrice));
+
+    });
+  });
+
+  describe("event Mint", function () {
+    it("mint", async function () {
+
+      const { contract, addr1, owner, tree } = await loadFixture(deployMerkleTreeFixture);
+  
+      const price = 5;
+      const amount = 3;
+      const totalPrice = price * amount;
+      
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+  
+      const tx = await contract.connect(addr1).eventMint(proof, amount, { value: totalPrice });
+  
+      await tx.wait();
+  
+      expect(await contract.balanceOf(addr1.address)).to.be.equal(amount);
+      
+    });
+  
+    it("added minting", async function () {
+  
+      const { contract, owner, addr1, tree } = await loadFixture(deployMerkleTreeFixture);
+      
+      const price = 5;
+      const amount = 3;
+      const amount2 = 2;
+      const totalPrice = price * amount;
+      const totalPrice2 = price * amount2;
+
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+  
+  
+      const tx = await contract.connect(addr1).eventMint(proof, amount, { value: totalPrice });
+  
+      await tx.wait();
+  
+      await contract.connect(addr1).eventMint(proof, amount2, { value: totalPrice2 });
+  
+      expect(await contract.balanceOf(addr1.address)).to.be.equal(amount + amount2);
+      
+    });
+  
+    it("Exceeded Minting Count", async function () {
+  
+      const { contract, owner, addr1, tree } = await loadFixture(deployMerkleTreeFixture);
+      
+      const price = 5;
+      const amount = 3;
+      const amount2 = 3;
+      const totalPrice = price * amount;
+      const totalPrice2 = price * amount2;
+
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+  
+  
+      const tx = await contract.connect(addr1).eventMint(proof, amount, { value: totalPrice });
+  
+      await tx.wait();
+  
+      await expect(contract.connect(addr1).eventMint(proof, amount2, { value: totalPrice2 })).to.be.revertedWith("The maximum number of minting has been exceeded.");
+      
+    });
+  
+    it("Not enough ether", async function () {
+  
+      const { contract, owner, addr1, tree } = await loadFixture(deployMerkleTreeFixture);
+
+      const price = 3;
+      const amount = 3;
+      const totalPrice = price * amount;
+
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+  
+      await expect(contract.connect(addr1).eventMint(proof, amount, { value: totalPrice })).to.be.revertedWith("Not enough ether.");
+      
+    });
+  
+    it("pause", async function () {
+  
+      const { contract, owner, addr1, tree } = await loadFixture(deployMerkleTreeFixture);
+      
+      const price = BigNumber.from(5);
+      const amount = BigNumber.from(3);
+      const totalPrice = price.mul(amount);
+
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+  
+      await contract.setEventMintEnabled(false);
+  
+      await expect(contract.connect(addr1).eventMint(proof, amount, { value: totalPrice })).to.be.revertedWith("The eventSale is not enabled.");
+      
+    });
+
+    it("maxSupply", async function () {
+      const { contract, owner, addr1, tree } = await loadFixture(deployMerkleTreeFixture);
+
+      contract.setMaxTotalSupply(5);
+      
+      const price = BigNumber.from(5);
+      const amount = BigNumber.from(4);
+      const totalPrice = price.mul(amount);
+
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+
+      await contract.connect(addr1).eventMint(proof, amount, { value: totalPrice });
+
+      const addedAmount = BigNumber.from(2);
+      const totalPrice2 = price.mul(addedAmount);
+
+      await expect(contract.connect(addr1).eventMint(proof, addedAmount, { value: totalPrice2 })).to.be.revertedWith("You can no longer mint NFT.");
+
+    });
+
+    it("The amount must be greater than 0", async function () {
+      const { contract, owner, addr1, tree } = await loadFixture(deployMerkleTreeFixture);
+      
+      const price = BigNumber.from(5);
+      const amount = BigNumber.from(0);
+      const totalPrice = price.mul(amount);
+
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+
+      await expect(contract.connect(addr1).eventMint(proof, amount, { value: totalPrice })).to.be.revertedWith("The amount must be greater than 0.");
+
+    });
+
+    it("allowlist", async function () {
+      const { contract, addr1, addr2, owner, tree } = await loadFixture(deployMerkleTreeFixture);
+  
+      const price = 5;
+      const amount = 3;
+      const totalPrice = price * amount;
+      
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr2.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+  
+      await expect(contract.connect(addr1).eventMint(proof, amount, { value: totalPrice })).to.be.revertedWith("MerkleProof is invalid.");
+
+    });
+
+    it("payable", async function () {
+      const { contract, addr1, addr2, owner, tree } = await loadFixture(deployMerkleTreeFixture);
+  
+      const price = 5;
+      const amount = 3;
+      const totalPrice = price * amount;
+      
+      let proof;
+
+      for (const [i, v] of tree.entries()) {
+        if (v[0] === addr1.address) {
+
+          proof = tree.getProof(i);
+
+          // console.log('Value:', v);
+          // console.log('Proof:', proof);
+          // console.log('Root: ', tree.root);
+        }
+      }
+  
+      const prevOwnerBalance = await owner.getBalance();
+      await contract.connect(addr1).eventMint(proof, amount, { value: totalPrice });
 
 
       expect(await owner.getBalance()).to.eq(prevOwnerBalance.add(totalPrice));
