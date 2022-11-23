@@ -17,9 +17,6 @@ contract MintNFT is ERC721Enumerable, Ownable {
     uint public maxTotalSupply = 9800;
     uint public mintPrice = 5;
     uint public maxMintCount = 3;
-
-    // signer
-    address public signer;
     
     // merkleRoot
     bytes32 public merkleRoot;
@@ -35,10 +32,6 @@ contract MintNFT is ERC721Enumerable, Ownable {
     // public sale
     mapping(address => uint) public mintlistAddress;
     bool public mintEnabled = false;
-
-    // event
-    mapping(address => bool) public isAllowlistAddress;
-    bool public allowlistMintEnabled = false;
 
     constructor(string memory _name, string memory _symbol, string memory _notRevealedURI) ERC721(_name, _symbol) {
         notRevealedURI = _notRevealedURI;
@@ -73,57 +66,7 @@ contract MintNFT is ERC721Enumerable, Ownable {
         }
     }
 
-    function recoverSigner(bytes32 hash, bytes memory signature) public pure returns (address) {
-
-        bytes32 messageDigest = keccak256(
-            abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32", 
-                hash
-            )
-        );
-
-        return ECDSA.recover(messageDigest, signature);
-    }
-
-    // presale phase 1
-    function preSaleOffChain1(bytes32 hash, bytes memory signature, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
-        require(preMintEnabled1, "The presale1 is not enabled.");
-        require(recoverSigner(hash, signature) == signer, "Address is not allowlisted.");
-        require(keccak256(abi.encodePacked(msg.sender)) == hash, "The sender is not allowlisted.");
-        require(_amount > 0, "The amount must be greater than 0.");
-        require(preMintlistAddress1[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
-
-        for (uint i = 0; i < _amount; i++) {
-            uint tokenId = totalSupply() + 1;
-            _mint(msg.sender, tokenId);
-        }
-
-        preMintlistAddress1[msg.sender] = preMintlistAddress1[msg.sender] + _amount;
-
-        payable(owner()).transfer(msg.value);
-
-    }
-
-    // presale phase 2
-    function preSaleOffChain2(bytes32 hash, bytes memory signature, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
-        require(preMintEnabled2, "The presale2 is not enabled.");
-        require(recoverSigner(hash, signature) == signer, "Address is not allowlisted.");
-        require(keccak256(abi.encodePacked(msg.sender)) == hash, "The sender is not allowlisted.");
-        require(_amount > 0, "The amount must be greater than 0.");
-        require(preMintlistAddress2[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
-
-        for (uint i = 0; i < _amount; i++) {
-            uint tokenId = totalSupply() + 1;
-            _mint(msg.sender, tokenId);
-        }
-
-        preMintlistAddress2[msg.sender] = preMintlistAddress2[msg.sender] + _amount;
-
-        payable(owner()).transfer(msg.value);
-
-    }
-
-    // merkle tree
+    // merkle tree phase 1
     function preSaleMerkleTree1(bytes32[] calldata proof, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
         require(preMintEnabled1, "The presale1 is not enabled.");
         require(_amount > 0, "The amount must be greater than 0.");
@@ -144,6 +87,27 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     }
 
+    // merkle tree phase 2
+    function preSaleMerkleTree2(bytes32[] calldata proof, uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
+        require(preMintEnabled2, "The presale2 is not enabled.");
+        require(_amount > 0, "The amount must be greater than 0.");
+        require(preMintlistAddress2[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
+
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender))));
+
+        if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert("MerkleProof is invalid.");
+
+        for (uint i = 0; i < _amount; i++) {
+            uint tokenId = totalSupply() + 1;
+            _mint(msg.sender, tokenId);
+        }
+
+        preMintlistAddress2[msg.sender] = preMintlistAddress2[msg.sender] + _amount;
+
+        payable(owner()).transfer(msg.value);
+
+    }
+
     // public sale
     function batchMintNFT(uint _amount) public payable costs(mintPrice * _amount) maxSupply(_amount) {
         require(mintEnabled, "The public sale is not enabled.");
@@ -157,26 +121,6 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
         mintlistAddress[msg.sender] = mintlistAddress[msg.sender] + _amount;
         
-        payable(owner()).transfer(msg.value);
-    }
-
-    // Allowlist addresses
-    function allowlistAddresses(address[] calldata wAddresses) public onlyOwner {
-        for (uint i = 0; i < wAddresses.length; i++) {
-            isAllowlistAddress[wAddresses[i]] = true;
-        }
-    }
-
-    // event mint
-    function preSale() public payable costs(mintPrice) maxSupply(1) {
-        require(isAllowlistAddress[msg.sender], "Address is not allowlisted");
-        require(allowlistMintEnabled, "The presale is not enabled.");
-
-        uint tokenId = totalSupply() + 1;
-        _mint(msg.sender, tokenId);
-
-        isAllowlistAddress[msg.sender] = false;    
-
         payable(owner()).transfer(msg.value);
     }
 
@@ -222,14 +166,6 @@ contract MintNFT is ERC721Enumerable, Ownable {
 
     function setMintEnabled(bool _mintEnabled) public onlyOwner {
         mintEnabled = _mintEnabled;
-    }
-
-    function setAllowlistMintEnabled(bool _allowlistMintEnabled) public onlyOwner {
-        allowlistMintEnabled = _allowlistMintEnabled;
-    }
-
-    function setSigner(address _signer) public onlyOwner {
-        signer = _signer;
     }
 
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
