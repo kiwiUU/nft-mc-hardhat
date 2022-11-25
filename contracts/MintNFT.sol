@@ -14,8 +14,8 @@ contract MintNFT is ERC721Enumerable, Ownable {
     bool public isRevealed;
 
     uint public maxTotalSupply = 1000;
-    uint public mintPrice = 5;
-    uint public maxMintCount = 3;
+    uint public mintPrice = 0;
+    uint public maxMintCount = 1;
     
     // merkleRoot
     bytes32 public merkleRoot;
