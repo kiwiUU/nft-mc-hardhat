@@ -222,7 +222,7 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
         merkleRoot = _merkleRoot;
     }
 
-        function setApprovalForAll(address operator, bool approved) public override onlyAllowedOperatorApproval(operator) {
+    function setApprovalForAll(address operator, bool approved) public override onlyAllowedOperatorApproval(operator) {
         super.setApprovalForAll(operator, approved);
     }
 
