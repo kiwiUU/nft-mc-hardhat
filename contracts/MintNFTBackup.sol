@@ -2,17 +2,12 @@
 
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "operator-filter-registry/src/DefaultOperatorFilterer.sol";
 
-contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
-
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
+contract MintNFTBackup is ERC721Enumerable, Ownable {
 
     string public notRevealedURI;
     string public metadataURI;
@@ -51,7 +46,7 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
     }
 
     modifier maxSupply(uint _amount) {
-        require(_tokenIds.current() + _amount <= maxTotalSupply, "You can no longer mint NFT.");
+        require(totalSupply() + _amount <= maxTotalSupply, "You can no longer mint NFT.");
         _;
     }
 
@@ -64,11 +59,8 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
     }
 
     function mintNFTOwner() public onlyOwner {
-
-        _tokenIds.increment();
-        uint256 newItemId = _tokenIds.current();
-
-        _mint(msg.sender, newItemId);
+        uint tokenId = totalSupply() + 1;
+        _mint(msg.sender, tokenId);
     }
 
     function batchMintNFTOwner(uint _amount) public onlyOwner {
@@ -88,10 +80,8 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
         if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert("MerkleProof is invalid.");
 
         for (uint i = 0; i < _amount; i++) {
-            _tokenIds.increment();
-            uint256 newItemId = _tokenIds.current();
-
-            _mint(msg.sender, newItemId);
+            uint tokenId = totalSupply() + 1;
+            _mint(msg.sender, tokenId);
         }
 
         preMintlistAddress1[msg.sender] = preMintlistAddress1[msg.sender] + _amount;
@@ -111,10 +101,8 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
         if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert("MerkleProof is invalid.");
 
         for (uint i = 0; i < _amount; i++) {
-            _tokenIds.increment();
-            uint256 newItemId = _tokenIds.current();
-
-            _mint(msg.sender, newItemId);
+            uint tokenId = totalSupply() + 1;
+            _mint(msg.sender, tokenId);
         }
 
         preMintlistAddress2[msg.sender] = preMintlistAddress2[msg.sender] + _amount;
@@ -130,10 +118,8 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
         require(mintlistAddress[msg.sender] + _amount <= maxMintCount, "The maximum number of minting has been exceeded.");
 
         for (uint i = 0; i < _amount; i++) {
-            _tokenIds.increment();
-            uint256 newItemId = _tokenIds.current();
-
-            _mint(msg.sender, newItemId);
+            uint tokenId = totalSupply() + 1;
+            _mint(msg.sender, tokenId);
         }
 
         mintlistAddress[msg.sender] = mintlistAddress[msg.sender] + _amount;
@@ -152,10 +138,8 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
         if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert("MerkleProof is invalid.");
 
         for (uint i = 0; i < _amount; i++) {
-            _tokenIds.increment();
-            uint256 newItemId = _tokenIds.current();
-
-            _mint(msg.sender, newItemId);
+            uint tokenId = totalSupply() + 1;
+            _mint(msg.sender, tokenId);
         }
 
         eventlistAddress[msg.sender] = eventlistAddress[msg.sender] + _amount;
@@ -167,15 +151,9 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
     // Airdrop NFTs
     function airdropNfts(address[] calldata wAddresses) public onlyOwner maxSupply(wAddresses.length) {
         for (uint i = 0; i < wAddresses.length; i++) {
-            _tokenIds.increment();
-            uint256 newItemId = _tokenIds.current();
-            
-            _mint(wAddresses[i], newItemId);    
+            uint tokenId = totalSupply() + 1;
+            _mint(wAddresses[i], tokenId);    
         }
-    }
-
-    function totalSupply() public view returns(uint) {
-        return _tokenIds.current();
     }
 
     function setNotRevealedURI(string memory _notRevealedURI) public onlyOwner {
@@ -220,29 +198,5 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
 
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
         merkleRoot = _merkleRoot;
-    }
-
-        function setApprovalForAll(address operator, bool approved) public override onlyAllowedOperatorApproval(operator) {
-        super.setApprovalForAll(operator, approved);
-    }
-
-    function approve(address operator, uint256 tokenId) public override onlyAllowedOperatorApproval(operator) {
-        super.approve(operator, tokenId);
-    }
-
-    function transferFrom(address from, address to, uint256 tokenId) public override onlyAllowedOperator(from) {
-        super.transferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
-        public
-        override
-        onlyAllowedOperator(from)
-    {
-        super.safeTransferFrom(from, to, tokenId, data);
     }
 }
