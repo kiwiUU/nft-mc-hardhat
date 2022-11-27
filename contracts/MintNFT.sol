@@ -64,7 +64,6 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
     }
 
     function mintNFTOwner() public onlyOwner {
-
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
 
@@ -238,11 +237,7 @@ contract MintNFT is ERC721, Ownable, DefaultOperatorFilterer {
         super.safeTransferFrom(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
-        public
-        override
-        onlyAllowedOperator(from)
-    {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 }
